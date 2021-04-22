@@ -106,16 +106,16 @@ fi
 # checking number of arguments
 if [ "${#}" != '3' ]
 then
-	echo -e "\033[0;31mSYNTAX ERROR\033[0m\n${0} <EAP_SSID> <EAP_identity> <wireless_interface>\n"
+	echo -e "\033[0;31mSYNTAX ERROR\033[0m\n${0} <EAP_ESSID> <EAP_identity> <wireless_interface>\n"
 	exit 1
 fi
 
-EAP_SSID="${1}"
+EAP_ESSID="${1}"
 EAP_identity="${2}"
 wireless_interface="${3}"
 EAP_buster_dir="$(readlink -f $(dirname "${0}"))"
 EAP_config_dir="${EAP_buster_dir}/EAP_config"
-EAP_log_dir="${EAP_buster_dir}/${EAP_SSID}"
+EAP_log_dir="${EAP_buster_dir}/${EAP_ESSID}"
 
 # checking wireless_interface existence and saving original mac address
 if ! iw "${wireless_interface}" 'info' &> '/dev/null'
@@ -168,7 +168,7 @@ modify_mac_address()
 
 # values needed to build wpa_supplicant configuration files
 EAP_values=(
-"${EAP_SSID}"
+"${EAP_ESSID}"
 "${EAP_identity}"
 "${EAP_buster_dir}/user.pem"
 "${EAP_buster_dir}/user.key"
@@ -183,8 +183,8 @@ ifconfig "${wireless_interface}" 'down'
 iwconfig "${wireless_interface}" 'mode' 'managed'
 ifconfig "${wireless_interface}" 'up'
 
-# certificate + key generation using the specified identity and SSID
-openssl 'req' -x509 -newkey 'rsa:4096' -keyout "${EAP_buster_dir}/user.key" -out "${EAP_buster_dir}/user.pem" -days '365' -passout 'pass:whatever' -subj "/CN=${EAP_identity}/O=${EAP_SSID}" &> '/dev/null'
+# certificate + key generation using the specified identity and ESSID
+openssl 'req' -x509 -newkey 'rsa:4096' -keyout "${EAP_buster_dir}/user.key" -out "${EAP_buster_dir}/user.pem" -days '365' -passout 'pass:whatever' -subj "/CN=${EAP_identity}/O=${EAP_ESSID}" &> '/dev/null'
 
 # stop wpa_supplicant before starting
 killall --quiet 'wpa_supplicant'
@@ -195,7 +195,7 @@ do
 	EAP_config_file="${EAP_config_dir}/${EAP_method}.conf"
 	if [ -f "${EAP_config_file}" ] && [ -r "${EAP_config_file}" ] && [ -w "${EAP_config_file}" ]
 	then
-		EAP_log_file="${EAP_log_dir}/${EAP_SSID}_${EAP_method}.log"
+		EAP_log_file="${EAP_log_dir}/${EAP_ESSID}_${EAP_method}.log"
 		echo '' > "${EAP_log_file}"
 		echo -n "checking ${EAP_method} support ..."
 		

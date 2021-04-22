@@ -12,7 +12,7 @@ During Red Team exercises, EAP_buster provides hints about what to expect from W
 
 Example: forget about grabbing passwords with fake AP attacks if clients are expected to authenticate through certificates only (EAP-TLS). Usage:
 
-	./EAP_buster.sh <EAP_SSID> <EAP_identity> <wireless_interface>
+	./EAP_buster.sh <EAP_ESSID> <EAP_identity> <wireless_interface>
 
 ![image](offensive_usage.png)
 
