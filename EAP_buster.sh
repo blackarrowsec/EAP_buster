@@ -26,6 +26,9 @@
 # - Find pending configuration files for weird EAP methods
 # - Detect network bans and set incremental timers
 # - Group tries by phase1 methods to discard all not supported phase2 variants
+# - Add support for hidden networks
+# - Handle SIGINT to restore MAC address on exit
+# - Grab EAP identities using tcpdump
 
 EAP_method_list=(
 'EAP-TLS'
