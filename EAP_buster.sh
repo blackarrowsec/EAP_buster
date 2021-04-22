@@ -183,7 +183,7 @@ EAP_values=(
 
 # network interface mode configuration
 ifconfig "${wireless_interface}" 'down'
-iwconfig "${wireless_interface}" 'mode' 'managed'
+iw dev "${wireless_interface}" 'set' 'type' 'managed'
 ifconfig "${wireless_interface}" 'up'
 
 # certificate + key generation using the specified identity and ESSID
