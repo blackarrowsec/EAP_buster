@@ -8,7 +8,7 @@ EAP_buster is a simple bash script that lists what EAP methods are supported by 
 Offensive usage
 ---------------
 
-During Red Team exercises, EAP_buster provides hints about what to expect from WiFi clients when launching fake WPA-Enterprise access points.
+During Red Team exercises, EAP_buster provides hints about what to expect from Wi-Fi clients when launching fake WPA-Enterprise access points.
 
 Example: forget about grabbing passwords with fake AP attacks if clients are expected to authenticate through certificates only (EAP-TLS). Usage:
 
