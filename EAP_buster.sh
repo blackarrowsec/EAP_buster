@@ -16,6 +16,9 @@
 #
 # Web
 # [www.blackarrow.net] - [www.tarlogic.com]
+#
+# Style Guide
+# https://google.github.io/styleguide/shellguide.html
 
 # TODO
 #
