@@ -30,7 +30,7 @@
 # - Handle SIGINT to restore MAC address on exit
 # - Grab EAP identities using tcpdump
 
-EAP_method_list=(
+readonly EAP_METHOD_LIST=(
 'EAP-TLS'
 'EAP-PEAP_MSCHAPV2'
 'EAP-PEAP_TLS'
@@ -60,7 +60,7 @@ EAP_method_list=(
 )
 
 # attributes needed to build wpa_supplicant configuration files
-EAP_attributes=(
+readonly EAP_ATTRIBUTES=(
 'ssid'
 'identity'
 'client_cert'
@@ -72,19 +72,19 @@ EAP_attributes=(
 )
 
 # colored output for EAP methods that are supported
-print_supported()
+function print_supported()
 {
     echo -e "\r\033[K\033[0;32msupported\033[0m      =>  ${1}"
 }
 
 # colored output for EAP methods that are not supported
-print_not_supported()
+function print_not_supported()
 {
     echo -e "\r\033[K\033[0;31mnot supported\033[0m  =>  ${1}"
 }
 
 # BlackArrow banner
-print_banner()
+function print_banner()
 {
     echo -e "\nEAP_buster by BlackArrow [https://github.com/blackarrowsec/EAP_buster]\n"
 }
@@ -92,9 +92,9 @@ print_banner()
 print_banner
 
 # warning about using legitimate EAP identities
-print_identities_warning()
+function print_identities_warning()
 {
-    echo -e '\033[1;33mWARNING\033[0m\nYou need to use legitimate EAP identities in order to start the 802.1X authentication process and get reliable results (EAP identites can be collected using sniffing tools such as crEAP, just make sure you use a real identity and not an anonymous one => https://github.com/Snizz/crEAP)\n'
+    echo -e '\033[1;33mWARNING\033[0m\nYou need to use legitimate EAP identities in order to start the 802.1X authentication process and get reliable results (EAP identites can be collected using sniffing tools such as crEAP, just make sure you use a real identity and not an anonymous one => https://github.com/Snizz/crEAP)\n' >&2
 }
 
 print_identities_warning
@@ -102,140 +102,143 @@ print_identities_warning
 # checking user permissions
 if [ "${USER}" != 'root' ]
 then
-    echo -e "\033[0;31mPERMISSIONS ERROR\033[0m\nYou need to be root to run ${0}, wpa_supplicant has to be started and stopped several times during execution\n"
+    echo -e "\033[0;31mPERMISSIONS ERROR\033[0m\nYou need to be root to run ${0}, wpa_supplicant has to be started and stopped several times during execution\n" >&2
     exit 1
 fi
 
 # checking number of arguments
-if [ "${#}" != '3' ]
+if [ ${#} -ne 3 ]
 then
-    echo -e "\033[0;31mSYNTAX ERROR\033[0m\n${0} <EAP_ESSID> <EAP_identity> <wireless_interface>\n"
+    echo -e "\033[0;31mSYNTAX ERROR\033[0m\n${0} <EAP_ESSID> <EAP_identity> <wireless_interface>\n" >&2
     exit 1
 fi
 
-EAP_ESSID="${1}"
-EAP_identity="${2}"
-wireless_interface="${3}"
-EAP_buster_dir="$(readlink -f $(dirname "${0}"))"
-EAP_config_dir="${EAP_buster_dir}/EAP_config"
-EAP_log_dir="${EAP_buster_dir}/${EAP_ESSID}"
+readonly EAP_ESSID="${1}"
+readonly EAP_IDENTITY="${2}"
+readonly WIRELESS_INTERFACE="${3}"
+readonly EAP_BUSTER_DIR="$(readlink -f $(dirname "${0}"))"
+readonly EAP_CONFIG_DIR="${EAP_BUSTER_DIR}/EAP_config"
+readonly EAP_LOG_DIR="${EAP_BUSTER_DIR}/${EAP_ESSID}"
+readonly MAC_CHANGE='CHANGE'
+readonly MAC_RESTORE='RESTORE'
 
-# checking wireless_interface existence and saving original mac address
-if ! iw "${wireless_interface}" info &> '/dev/null'
+# checking WIRELESS_INTERFACE existence and saving original MAC address
+if ! iw "${WIRELESS_INTERFACE}" info &> '/dev/null'
 then
-    echo -e "\033[0;31mINPUT ERROR\033[0m\n3rd argument "'"'"${wireless_interface}"'"'" is not a valid wireless interface\n"
+    echo -e "\033[0;31mINPUT ERROR\033[0m\n3rd argument "'"'"${WIRELESS_INTERFACE}"'"'" is not a valid wireless interface\n" >&2
     exit 1
 else
-    wireless_interface_mac="$(iw "${wireless_interface}" info | grep 'addr' | cut --delimiter=' ' --fields='2')"
+    readonly WIRELESS_INTERFACE_MAC="$(iw "${WIRELESS_INTERFACE}" info | grep 'addr' | cut --delimiter=' ' --fields='2')"
 fi
 
-# checking EAP_buster_dir permissions
-if [ ! -r "${EAP_buster_dir}" ] || [ ! -w "${EAP_buster_dir}" ]
+# checking EAP_BUSTER_DIR permissions
+if [ ! -r "${EAP_BUSTER_DIR}" ] || [ ! -w "${EAP_BUSTER_DIR}" ]
 then
-    echo -e "\033[0;31mPERMISSIONS ERROR\033[0m\nYou need read and write permissions in ${EAP_buster_dir}\n"
+    echo -e "\033[0;31mPERMISSIONS ERROR\033[0m\nYou need read and write permissions in ${EAP_BUSTER_DIR}\n" >&2
     exit 1
 fi
 
-# checking EAP_config_dir permissions
-if [ ! -r "${EAP_config_dir}" ]
+# checking EAP_CONFIG_DIR permissions
+if [ ! -r "${EAP_CONFIG_DIR}" ]
 then
-    echo -e "\033[0;31mPERMISSIONS ERROR\033[0m\nYou need read permissions in ${EAP_config_dir} to access configuration files\n"
+    echo -e "\033[0;31mPERMISSIONS ERROR\033[0m\nYou need read permissions in ${EAP_CONFIG_DIR} to access configuration files\n" >&2
     exit 1
 fi
 
-# checking EAP_log_dir permissions (and creation if needed)
-if [ ! -d "${EAP_log_dir}" ]
+# checking EAP_LOG_DIR permissions (and creation if needed)
+if [ ! -d "${EAP_LOG_DIR}" ]
 then
-    mkdir "${EAP_log_dir}"
-elif [ ! -r "${EAP_log_dir}" ] || [ ! -w "${EAP_log_dir}" ]
+    mkdir "${EAP_LOG_DIR}"
+elif [ ! -r "${EAP_LOG_DIR}" ] || [ ! -w "${EAP_LOG_DIR}" ]
 then
-    echo -e "\033[0;31mPERMISSIONS ERROR\033[0m\nYou need read and write permissions in ${EAP_log_dir} to create and access wpa_supplicant logs\n"
+    echo -e "\033[0;31mPERMISSIONS ERROR\033[0m\nYou need read and write permissions in ${EAP_LOG_DIR} to create and access wpa_supplicant logs\n" >&2
     exit 1
 fi
 
-# change to random or restore mac address to avoid network bans
-modify_mac_address()
+# change to random or restore MAC address to avoid network bans
+function modify_mac_address()
 {
-    ifconfig "${wireless_interface}" down
-    if [ "${1}" == 'change' ]
+    ifconfig "${WIRELESS_INTERFACE}" down
+    if [ "${1}" == "${MAC_CHANGE}" ]
     then
         urandom_6="$(xxd -plain -len '6' '/dev/urandom')"
         wireless_interface_mac_new="${urandom_6:0:1}0:${urandom_6:2:2}:${urandom_6:4:2}:${urandom_6:6:2}:${urandom_6:8:2}:${urandom_6:10:2}"
-        ifconfig "${wireless_interface}" hw ether "${wireless_interface_mac_new}"
-    elif [ "${1}" == 'restore' ]
+        ifconfig "${WIRELESS_INTERFACE}" hw ether "${wireless_interface_mac_new}"
+    elif [ "${1}" == "${MAC_RESTORE}" ]
     then
-        ifconfig "${wireless_interface}" hw ether "${wireless_interface_mac}"
+        ifconfig "${WIRELESS_INTERFACE}" hw ether "${WIRELESS_INTERFACE_MAC}"
     fi
-    ifconfig "${wireless_interface}" up
+    ifconfig "${WIRELESS_INTERFACE}" up
 }
 
 # values needed to build wpa_supplicant configuration files
-EAP_values=(
+readonly EAP_VALUES=(
 "${EAP_ESSID}"
-"${EAP_identity}"
-"${EAP_buster_dir}/user.pem"
-"${EAP_buster_dir}/user.key"
+"${EAP_IDENTITY}"
+"${EAP_BUSTER_DIR}/user.pem"
+"${EAP_BUSTER_DIR}/user.key"
 'whatever'
-"${EAP_buster_dir}/user.pem"
-"${EAP_buster_dir}/user.key"
+"${EAP_BUSTER_DIR}/user.pem"
+"${EAP_BUSTER_DIR}/user.key"
 'whatever'
 )
 
 # network interface mode configuration
-ifconfig "${wireless_interface}" down
-iw dev "${wireless_interface}" set type managed
-ifconfig "${wireless_interface}" up
+ifconfig "${WIRELESS_INTERFACE}" down
+iw dev "${WIRELESS_INTERFACE}" set type managed
+ifconfig "${WIRELESS_INTERFACE}" up
 
 # certificate + key generation using the specified identity and ESSID
-openssl req -x509 -newkey 'rsa:4096' -keyout "${EAP_buster_dir}/user.key" -out "${EAP_buster_dir}/user.pem" -days '365' -passout 'pass:whatever' -subj "/CN=${EAP_identity}/O=${EAP_ESSID}" &> '/dev/null'
+openssl req -x509 -newkey 'rsa:4096' -keyout "${EAP_BUSTER_DIR}/user.key" -out "${EAP_BUSTER_DIR}/user.pem" -days '365' -passout 'pass:whatever' -subj "/CN=${EAP_IDENTITY}/O=${EAP_ESSID}" &> '/dev/null'
 
 # stop wpa_supplicant before starting
 killall --quiet 'wpa_supplicant'
 
 # main loop between EAP methods
-for EAP_method in "${EAP_method_list[@]}"
+for eap_method in "${EAP_METHOD_LIST[@]}"
 do
-    EAP_config_file="${EAP_config_dir}/${EAP_method}.conf"
-    if [ -f "${EAP_config_file}" ] && [ -r "${EAP_config_file}" ] && [ -w "${EAP_config_file}" ]
+    eap_config_file="${EAP_CONFIG_DIR}/${eap_method}.conf"
+    if [ -f "${eap_config_file}" ] && [ -r "${eap_config_file}" ] && [ -w "${eap_config_file}" ]
     then
-        EAP_log_file="${EAP_log_dir}/${EAP_ESSID}_${EAP_method}.log"
-        echo -n '' > "${EAP_log_file}"
-        echo -n "checking ${EAP_method} support ..."
+        eap_log_file="${EAP_LOG_DIR}/${EAP_ESSID}_${eap_method}.log"
+        echo -n '' > "${eap_log_file}"
+        echo -n "checking ${eap_method} support ..."
         
         # wpa_supplicant attributes configuration
-        for EAP_tuple in $(seq '0' "$(("${#EAP_attributes[@]}" - "1"))")
+        for eap_tuple in $(seq '0' "$(("${#EAP_ATTRIBUTES[@]}" - "1"))")
         do
-            sed --in-place "s|${EAP_attributes[${EAP_tuple}]}=.*|${EAP_attributes[${EAP_tuple}]}=\"${EAP_values[${EAP_tuple}]}\"|g" "${EAP_config_file}"
+            sed --in-place "s|${EAP_ATTRIBUTES[${eap_tuple}]}=.*|${EAP_ATTRIBUTES[${eap_tuple}]}=\"${EAP_VALUES[${eap_tuple}]}\"|g" "${eap_config_file}"
         done
         
-        # mac address change and wpa_supplicant execution
-        modify_mac_address 'change'
-        timeout '10' wpa_supplicant -d -K -D 'nl80211' -i "${wireless_interface}" -c "${EAP_config_file}" -f "${EAP_log_file}"
+        # MAC address change and wpa_supplicant execution
+        modify_mac_address "${MAC_CHANGE}"
+        timeout '10' wpa_supplicant -d -K -D 'nl80211' -i "${WIRELESS_INTERFACE}" -c "${eap_config_file}" -f "${eap_log_file}"
         sleep '5'
         
         # check log file to identify supported EAP methods
-        if grep --quiet 'EAP: Status notification: accept proposed method' "${EAP_log_file}"
+        if grep --quiet 'EAP: Status notification: accept proposed method' "${eap_log_file}"
         then
-            if grep --quiet 'TLS: Phase 2 Request: Nak' "${EAP_log_file}"
+            if grep --quiet 'TLS: Phase 2 Request: Nak' "${eap_log_file}"
             then
-                if grep --quiet 'Selected Phase 2' "${EAP_log_file}"
+                if grep --quiet 'Selected Phase 2' "${eap_log_file}"
                 then
-                    print_supported "${EAP_method}"
+                    print_supported "${eap_method}"
                 else
-                    print_not_supported "${EAP_method}"
+                    print_not_supported "${eap_method}"
                 fi
             
             # no 'Phase 2 Nak' at this point means that either the phase 2 has been selected or there is no phase 2 at all
             else
-                print_supported "${EAP_method}"
+                print_supported "${eap_method}"
             fi
         else
-            print_not_supported "${EAP_method}"
+            print_not_supported "${eap_method}"
         fi
     fi
 done
 
+# MAC address restoration
+modify_mac_address "${MAC_RESTORE}"
 echo ''
-modify_mac_address 'restore'
 
 exit 0
