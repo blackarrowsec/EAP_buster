@@ -18,7 +18,7 @@ Example: forget about grabbing passwords with fake AP attacks if clients are exp
 
 It should be noted that EAP_buster needs legitimate identities in order to start the 802.1X authentication process and get reliable results.
 
-If Protected Management Frames are not in use, EAP identites can be passively collected using sniffing tools such as [crEAP](https://github.com/Snizz/crEAP), just make sure you use a real identity and not an anonymous one.
+EAP identites can be passively collected using sniffing tools such as [crEAP](https://github.com/Snizz/crEAP), just make sure you use a real identity and not an anonymous one.
 
 Defensive usage
 ---------------

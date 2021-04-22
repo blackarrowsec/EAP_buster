@@ -94,7 +94,7 @@ print_banner
 # warning about using legitimate EAP identities
 print_identities_warning()
 {
-    echo -e '\033[1;33mWARNING\033[0m\nYou need to use legitimate EAP identities in order to start the 802.1X authentication process and get reliable results (if Protected Management Frames are not in use, EAP identites can be collected using sniffing tools such as crEAP, just make sure you use a real identity and not an anonymous one => https://github.com/Snizz/crEAP)\n'
+    echo -e '\033[1;33mWARNING\033[0m\nYou need to use legitimate EAP identities in order to start the 802.1X authentication process and get reliable results (EAP identites can be collected using sniffing tools such as crEAP, just make sure you use a real identity and not an anonymous one => https://github.com/Snizz/crEAP)\n'
 }
 
 print_identities_warning
