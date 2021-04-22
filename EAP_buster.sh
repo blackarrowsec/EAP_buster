@@ -121,12 +121,12 @@ EAP_config_dir="${EAP_buster_dir}/EAP_config"
 EAP_log_dir="${EAP_buster_dir}/${EAP_ESSID}"
 
 # checking wireless_interface existence and saving original mac address
-if ! iw "${wireless_interface}" 'info' &> '/dev/null'
+if ! iw "${wireless_interface}" info &> '/dev/null'
 then
     echo -e "\033[0;31mINPUT ERROR\033[0m\n3rd argument "'"'"${wireless_interface}"'"'" is not a valid wireless interface\n"
     exit 1
 else
-    wireless_interface_mac="$(iw "${wireless_interface}" 'info' | grep 'addr' | cut --delimiter=' ' --fields='2')"
+    wireless_interface_mac="$(iw "${wireless_interface}" info | grep 'addr' | cut --delimiter=' ' --fields='2')"
 fi
 
 # checking EAP_buster_dir permissions
@@ -156,17 +156,17 @@ fi
 # change to random or restore mac address to avoid network bans
 modify_mac_address()
 {
-    ifconfig "${wireless_interface}" 'down'
+    ifconfig "${wireless_interface}" down
     if [ "${1}" == 'change' ]
     then
         urandom_6="$(xxd -plain -len '6' '/dev/urandom')"
         wireless_interface_mac_new="${urandom_6:0:1}0:${urandom_6:2:2}:${urandom_6:4:2}:${urandom_6:6:2}:${urandom_6:8:2}:${urandom_6:10:2}"
-        ifconfig "${wireless_interface}" 'hw' 'ether' "${wireless_interface_mac_new}"
+        ifconfig "${wireless_interface}" hw ether "${wireless_interface_mac_new}"
     elif [ "${1}" == 'restore' ]
     then
-        ifconfig "${wireless_interface}" 'hw' 'ether' "${wireless_interface_mac}"
+        ifconfig "${wireless_interface}" hw ether "${wireless_interface_mac}"
     fi
-    ifconfig "${wireless_interface}" 'up'
+    ifconfig "${wireless_interface}" up
 }
 
 # values needed to build wpa_supplicant configuration files
@@ -182,12 +182,12 @@ EAP_values=(
 )
 
 # network interface mode configuration
-ifconfig "${wireless_interface}" 'down'
-iw dev "${wireless_interface}" 'set' 'type' 'managed'
-ifconfig "${wireless_interface}" 'up'
+ifconfig "${wireless_interface}" down
+iw dev "${wireless_interface}" set type managed
+ifconfig "${wireless_interface}" up
 
 # certificate + key generation using the specified identity and ESSID
-openssl 'req' -x509 -newkey 'rsa:4096' -keyout "${EAP_buster_dir}/user.key" -out "${EAP_buster_dir}/user.pem" -days '365' -passout 'pass:whatever' -subj "/CN=${EAP_identity}/O=${EAP_ESSID}" &> '/dev/null'
+openssl req -x509 -newkey 'rsa:4096' -keyout "${EAP_buster_dir}/user.key" -out "${EAP_buster_dir}/user.pem" -days '365' -passout 'pass:whatever' -subj "/CN=${EAP_identity}/O=${EAP_ESSID}" &> '/dev/null'
 
 # stop wpa_supplicant before starting
 killall --quiet 'wpa_supplicant'
@@ -199,7 +199,7 @@ do
     if [ -f "${EAP_config_file}" ] && [ -r "${EAP_config_file}" ] && [ -w "${EAP_config_file}" ]
     then
         EAP_log_file="${EAP_log_dir}/${EAP_ESSID}_${EAP_method}.log"
-        echo '' > "${EAP_log_file}"
+        echo -n '' > "${EAP_log_file}"
         echo -n "checking ${EAP_method} support ..."
         
         # wpa_supplicant attributes configuration
