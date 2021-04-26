@@ -161,17 +161,17 @@ fi
 # change to random or restore MAC address to avoid network bans
 function modify_mac_address()
 {
-    ifconfig "${WIRELESS_INTERFACE}" down
+    ip link set dev "${WIRELESS_INTERFACE}" down
     if [ "${1}" == "${MAC_CHANGE}" ]
     then
         urandom_6="$(xxd -plain -len '6' '/dev/urandom')"
         wireless_interface_mac_new="${urandom_6:0:1}0:${urandom_6:2:2}:${urandom_6:4:2}:${urandom_6:6:2}:${urandom_6:8:2}:${urandom_6:10:2}"
-        ifconfig "${WIRELESS_INTERFACE}" hw ether "${wireless_interface_mac_new}"
+        ip link set dev "${WIRELESS_INTERFACE}" address "${wireless_interface_mac_new}"
     elif [ "${1}" == "${MAC_RESTORE}" ]
     then
-        ifconfig "${WIRELESS_INTERFACE}" hw ether "${WIRELESS_INTERFACE_MAC}"
+        ip link set dev "${WIRELESS_INTERFACE}" address "${WIRELESS_INTERFACE_MAC}"
     fi
-    ifconfig "${WIRELESS_INTERFACE}" up
+    ip link set dev "${WIRELESS_INTERFACE}" up
 }
 
 # values needed to build wpa_supplicant configuration files
@@ -187,9 +187,9 @@ readonly EAP_VALUES=(
 )
 
 # network interface mode configuration
-ifconfig "${WIRELESS_INTERFACE}" down
+ip link set dev "${WIRELESS_INTERFACE}" down
 iw dev "${WIRELESS_INTERFACE}" set type managed
-ifconfig "${WIRELESS_INTERFACE}" up
+ip link set dev "${WIRELESS_INTERFACE}" up
 
 # certificate + key generation using the specified identity and ESSID
 openssl req -x509 -newkey 'rsa:4096' -keyout "${EAP_BUSTER_DIR}/user.key" -out "${EAP_BUSTER_DIR}/user.pem" -days '365' -passout 'pass:whatever' -subj "/CN=${EAP_IDENTITY}/O=${EAP_ESSID}" &> '/dev/null'
