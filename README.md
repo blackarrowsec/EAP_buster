@@ -11,9 +11,9 @@ Offensive usage
 During Red Team exercises, EAP_buster provides hints about what to expect from Wi-Fi clients when launching fake WPA-Enterprise access points.
 
 Example: forget about grabbing passwords with fake AP attacks if clients are expected to authenticate through certificates only (EAP-TLS). Usage:
-
-    ./EAP_buster.sh <EAP_ESSID> <EAP_identity> <wireless_interface>
-
+```bash
+./EAP_buster.sh "${EAP_ESSID}" "${EAP_identity}" "${wireless_interface}"
+```
 ![image](offensive_usage.png)
 
 It should be noted that EAP_buster needs legitimate identities in order to start the 802.1X authentication process and get reliable results.
