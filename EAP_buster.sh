@@ -119,7 +119,7 @@ fi
 readonly EAP_ESSID="${1}"
 readonly EAP_IDENTITY="${2}"
 readonly WIRELESS_INTERFACE="${3}"
-readonly EAP_BUSTER_DIR="$(readlink -f $(dirname "${0}"))"
+readonly EAP_BUSTER_DIR="$(dirname "${0}" | xargs realpath)"
 readonly EAP_CONFIG_DIR="${EAP_BUSTER_DIR}/EAP_config"
 readonly EAP_LOG_DIR="${EAP_BUSTER_DIR}/${EAP_ESSID}"
 readonly MAC_CHANGE='CHANGE'
@@ -208,7 +208,7 @@ do
         echo -n "checking ${eap_method} support ..."
         
         # wpa_supplicant attributes configuration
-        for eap_tuple in $(seq '0' "$(( "${#EAP_ATTRIBUTES[@]}" - 1 ))")
+        for eap_tuple in $(echo "$(( "${#EAP_ATTRIBUTES[@]}" - 1 ))" | xargs seq '0')
         do
             sed --in-place "s|${EAP_ATTRIBUTES[${eap_tuple}]}=.*|${EAP_ATTRIBUTES[${eap_tuple}]}=\"${EAP_VALUES[${eap_tuple}]}\"|g" "${eap_config_file}"
         done
