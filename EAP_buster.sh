@@ -119,7 +119,7 @@ fi
 readonly EAP_ESSID="${1}"
 readonly EAP_IDENTITY="${2}"
 readonly WIRELESS_INTERFACE="${3}"
-readonly EAP_BUSTER_DIR="$(dirname "${0}" | xargs realpath)"
+readonly EAP_BUSTER_DIR="$(dirname "${0}" | xargs --delimiter='\n' realpath)"
 readonly EAP_CONFIG_DIR="${EAP_BUSTER_DIR}/EAP_config"
 readonly EAP_LOG_DIR="${EAP_BUSTER_DIR}/${EAP_ESSID}"
 readonly MAC_CHANGE='CHANGE'
