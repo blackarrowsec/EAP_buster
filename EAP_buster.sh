@@ -208,7 +208,7 @@ do
         echo -n "checking ${eap_method} support ..."
         
         # wpa_supplicant attributes configuration
-        for eap_tuple in $(seq '0' "$(("${#EAP_ATTRIBUTES[@]}" - "1"))")
+        for eap_tuple in $(seq '0' "$(( "${#EAP_ATTRIBUTES[@]}" - 1 ))")
         do
             sed --in-place "s|${EAP_ATTRIBUTES[${eap_tuple}]}=.*|${EAP_ATTRIBUTES[${eap_tuple}]}=\"${EAP_VALUES[${eap_tuple}]}\"|g" "${eap_config_file}"
         done
