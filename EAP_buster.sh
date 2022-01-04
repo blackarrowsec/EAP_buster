@@ -22,6 +22,7 @@
 
 # TODO
 #
+# - List dependencies
 # - Parse arguments using getops instead of manually
 # - Restore wpa_supplicant original status after execution
 # - Be able to grab various EAP identities from a file to avoid network bans
