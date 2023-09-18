@@ -103,7 +103,7 @@ function print_identities_warning()
 print_identities_warning
 
 # checking user permissions
-if [ "${USER}" != 'root' ]
+if [ "${UID}" != '0' ]
 then
     echo -e "\033[0;31mPERMISSIONS ERROR\033[0m\nYou need to be root to run ${0}, wpa_supplicant has to be started and stopped several times during execution\n" >&2
     exit 1
