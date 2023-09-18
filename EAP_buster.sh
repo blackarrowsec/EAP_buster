@@ -30,7 +30,6 @@
 # - Find pending configuration files for weird EAP methods
 # - Detect network bans and set incremental timers
 # - Group tries by phase1 methods to discard all not supported phase2 variants
-# - Add support for hidden networks
 # - Handle SIGINT to restore MAC address on exit
 # - Grab EAP identities using tcpdump
 
@@ -211,12 +210,12 @@ do
         # wpa_supplicant attributes configuration
         for eap_tuple in $(echo "$(( "${#EAP_ATTRIBUTES[@]}" - 1 ))" | xargs seq '0')
         do
-            sed --in-place "s|${EAP_ATTRIBUTES[${eap_tuple}]}=.*|${EAP_ATTRIBUTES[${eap_tuple}]}=\"${EAP_VALUES[${eap_tuple}]}\"|g" "${eap_config_file}"
+            sed --regexp-extended --in-place "s|^(\s*${EAP_ATTRIBUTES[${eap_tuple}]})=.*$|\1=\"${EAP_VALUES[${eap_tuple}]}\"|g" "${eap_config_file}"
         done
         
         # MAC address change and wpa_supplicant execution
         modify_mac_address "${MAC_CHANGE}"
-        timeout '10' wpa_supplicant -d -K -D 'nl80211' -i "${WIRELESS_INTERFACE}" -c "${eap_config_file}" -f "${eap_log_file}"
+        timeout '16' wpa_supplicant -d -K -D 'nl80211' -i "${WIRELESS_INTERFACE}" -c "${eap_config_file}" -f "${eap_log_file}"
         sleep '5'
         
         # check log file to identify supported EAP methods
