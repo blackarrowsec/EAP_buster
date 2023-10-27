@@ -30,13 +30,12 @@
 # - Find pending configuration files for weird EAP methods
 # - Detect network bans and set incremental timers
 # - Group tries by phase1 methods to discard all not supported phase2 variants
-# - Add support for hidden networks
 # - Handle SIGINT to restore MAC address on exit
 # - Grab EAP identities using tcpdump
 
 readonly EAP_METHOD_LIST=(
 'EAP-TLS'
-'EAP-PEAP_MSCHAPV2'
+'EAP-PEAP_MSCHAPv2'
 'EAP-PEAP_TLS'
 'EAP-PEAP_GTC'
 'EAP-PEAP_OTP'
@@ -44,9 +43,9 @@ readonly EAP_METHOD_LIST=(
 'EAP-TTLS_EAP-MD5-Challenge'
 'EAP-TTLS_EAP-GTC'
 'EAP-TTLS_EAP-OTP'
-'EAP-TTLS_EAP-MSCHAPV2'
+'EAP-TTLS_EAP-MSCHAPv2'
 'EAP-TTLS_EAP-TLS'
-'EAP-TTLS_MSCHAPV2'
+'EAP-TTLS_MSCHAPv2'
 'EAP-TTLS_MSCHAP'
 'EAP-TTLS_PAP'
 'EAP-TTLS_CHAP'
@@ -58,7 +57,7 @@ readonly EAP_METHOD_LIST=(
 'EAP-IKEv2'
 'EAP-GPSK'
 'LEAP'
-'EAP-FAST_MSCHAPV2'
+'EAP-FAST_MSCHAPv2'
 'EAP-FAST_GTC'
 'EAP-FAST_OTP'
 )
@@ -104,35 +103,35 @@ function print_identities_warning()
 print_identities_warning
 
 # checking user permissions
-if [ "${USER}" != 'root' ]
+if [ "${UID}" != '0' ]
 then
-    echo -e "\033[0;31mPERMISSIONS ERROR\033[0m\nYou need to be root to run ${0}, wpa_supplicant has to be started and stopped several times during execution\n" >&2
+    echo -e "\033[0;31mPERMISSIONS ERROR\033[0m\nYou need to be root to run EAP_buster.sh, wpa_supplicant has to be started and stopped several times during execution\n" >&2
     exit 1
 fi
 
 # checking number of arguments
 if [ ${#} -ne 3 ]
 then
-    echo -e "\033[0;31mSYNTAX ERROR\033[0m\n${0} <EAP_ESSID> <EAP_identity> <wireless_interface>\n" >&2
+    echo -e "\033[0;31mSYNTAX ERROR\033[0m\nEAP_buster.sh <EAP_ESSID> <EAP_identity> <wifi_interface>\n" >&2
     exit 1
 fi
 
 readonly EAP_ESSID="${1}"
 readonly EAP_IDENTITY="${2}"
-readonly WIRELESS_INTERFACE="${3}"
+readonly WIFI_INTERFACE="${3}"
 readonly EAP_BUSTER_DIR="$(dirname "${0}" | xargs --delimiter='\n' realpath)"
 readonly EAP_CONFIG_DIR="${EAP_BUSTER_DIR}/EAP_config"
 readonly EAP_LOG_DIR="${EAP_BUSTER_DIR}/${EAP_ESSID}"
 readonly MAC_CHANGE='CHANGE'
 readonly MAC_RESTORE='RESTORE'
 
-# checking WIRELESS_INTERFACE existence and saving original MAC address
-if ! iw "${WIRELESS_INTERFACE}" info &> '/dev/null'
+# checking WIFI_INTERFACE existence and saving original MAC address
+if ! iw "${WIFI_INTERFACE}" info &> '/dev/null'
 then
-    echo -e "\033[0;31mINPUT ERROR\033[0m\n3rd argument "'"'"${WIRELESS_INTERFACE}"'"'" is not a valid wireless interface\n" >&2
+    echo -e "\033[0;31mINPUT ERROR\033[0m\n3rd argument "'"'"${WIFI_INTERFACE}"'"'" is not a valid Wi-Fi interface\n" >&2
     exit 1
 else
-    readonly WIRELESS_INTERFACE_MAC="$(iw "${WIRELESS_INTERFACE}" info | grep 'addr' | cut --delimiter=' ' --fields='2')"
+    readonly WIFI_INTERFACE_MAC="$(iw "${WIFI_INTERFACE}" info | grep 'addr' | cut --delimiter=' ' --fields='2')"
 fi
 
 # checking EAP_BUSTER_DIR permissions
@@ -162,17 +161,17 @@ fi
 # change to random or restore MAC address to avoid network bans
 function modify_mac_address()
 {
-    ip link set dev "${WIRELESS_INTERFACE}" down
+    ip link set dev "${WIFI_INTERFACE}" down
     if [ "${1}" == "${MAC_CHANGE}" ]
     then
         urandom_6="$(xxd -plain -len '6' '/dev/urandom')"
-        wireless_interface_mac_new="${urandom_6:0:1}0:${urandom_6:2:2}:${urandom_6:4:2}:${urandom_6:6:2}:${urandom_6:8:2}:${urandom_6:10:2}"
-        ip link set dev "${WIRELESS_INTERFACE}" address "${wireless_interface_mac_new}"
+        wifi_interface_mac_new="${urandom_6:0:1}0:${urandom_6:2:2}:${urandom_6:4:2}:${urandom_6:6:2}:${urandom_6:8:2}:${urandom_6:10:2}"
+        ip link set dev "${WIFI_INTERFACE}" address "${wifi_interface_mac_new}"
     elif [ "${1}" == "${MAC_RESTORE}" ]
     then
-        ip link set dev "${WIRELESS_INTERFACE}" address "${WIRELESS_INTERFACE_MAC}"
+        ip link set dev "${WIFI_INTERFACE}" address "${WIFI_INTERFACE_MAC}"
     fi
-    ip link set dev "${WIRELESS_INTERFACE}" up
+    ip link set dev "${WIFI_INTERFACE}" up
 }
 
 # values needed to build wpa_supplicant configuration files
@@ -188,9 +187,9 @@ readonly EAP_VALUES=(
 )
 
 # network interface mode configuration
-ip link set dev "${WIRELESS_INTERFACE}" down
-iw dev "${WIRELESS_INTERFACE}" set type managed
-ip link set dev "${WIRELESS_INTERFACE}" up
+ip link set dev "${WIFI_INTERFACE}" down
+iw dev "${WIFI_INTERFACE}" set type managed
+ip link set dev "${WIFI_INTERFACE}" up
 
 # certificate + key generation using the specified identity and ESSID
 openssl req -x509 -newkey 'rsa:4096' -keyout "${EAP_BUSTER_DIR}/user.key" -out "${EAP_BUSTER_DIR}/user.pem" -days '365' -passout 'pass:whatever' -subj "/CN=${EAP_IDENTITY}/O=${EAP_ESSID}" &> '/dev/null'
@@ -211,12 +210,12 @@ do
         # wpa_supplicant attributes configuration
         for eap_tuple in $(echo "$(( "${#EAP_ATTRIBUTES[@]}" - 1 ))" | xargs seq '0')
         do
-            sed --in-place "s|${EAP_ATTRIBUTES[${eap_tuple}]}=.*|${EAP_ATTRIBUTES[${eap_tuple}]}=\"${EAP_VALUES[${eap_tuple}]}\"|g" "${eap_config_file}"
+            sed --regexp-extended --in-place "s|^(\s*${EAP_ATTRIBUTES[${eap_tuple}]})=.*$|\1=\"${EAP_VALUES[${eap_tuple}]}\"|g" "${eap_config_file}"
         done
         
         # MAC address change and wpa_supplicant execution
         modify_mac_address "${MAC_CHANGE}"
-        timeout '10' wpa_supplicant -d -K -D 'nl80211' -i "${WIRELESS_INTERFACE}" -c "${eap_config_file}" -f "${eap_log_file}"
+        timeout '16' wpa_supplicant -d -K -D 'nl80211' -i "${WIFI_INTERFACE}" -c "${eap_config_file}" -f "${eap_log_file}"
         sleep '5'
         
         # check log file to identify supported EAP methods
